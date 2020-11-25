@@ -9,11 +9,46 @@ import pandas
 
 from geo.utils import aggregate_zip_code_geojsons
 
-STATES_GEO = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us-states.json'
+# STATES_GEO = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us-states.json'
+STATES_GEO = './geo/folium/us-states.json'
+# COUNTIES_GEO = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us_counties_20m_topo.json'
+COUNTIES_GEO = './geo/folium/us_counties_20m_topo.json'
+
+def presidential(folium_map: folium.Map = None,
+                 **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
+    election_data = pandas.read_csv('./data/election_2016_data/data/presidential_general_election_2016_by_county.csv')
+    election_data = election_data.pivot_table(index=['fips'],
+                                              columns=['individual_party'],
+                                              values=['vote_pct'])['vote_pct']
+    election_data['fips'] = election_data.index
+    election_data['fips'] = election_data['fips'].apply(
+        lambda code: f'0500000US{code:05d}',
+        )
+    election_data['democrat_ratio'] = (
+        election_data['democrat']
+        / (election_data['democrat'] + election_data['republican'])
+        )
+    if folium_map:
+        # topojson = folium.TopoJson(
+        #     COUNTIES_GEO,
+        #     'object.us_counties_20m',
+        #     ).add_to(folium_map)
+        folium.Choropleth(
+            name='presidential',
+            geo_data=open(COUNTIES_GEO),
+            data=election_data,
+            columns=['fips', 'democrat_ratio'],
+            key_on='feature.id',
+            fill_color='RdBu',
+            legend_name='2016 Presidential Election',
+            topojson='objects.us_counties_20m',
+            **kwargs
+            ).add_to(folium_map)
+    return COUNTIES_GEO, election_data
 
 def midwifery(folium_map: folium.Map = None,
               **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
-    midwifery_data = pandas.read_csv(r'.\data\midwifery.csv')
+    midwifery_data = pandas.read_csv('./data/midwifery.csv')
     midwifery_data['total'] = midwifery_data['legality'] + midwifery_data['licensure']
     if folium_map:
         folium.Choropleth(
@@ -41,7 +76,7 @@ def zori(folium_map: folium.Map = None,
     rent_zips_geo = './geo/zori_zip_geo.json'
     # Read as string because source data zip codes are sometimes stupidly
     # formatted with leading zeroes
-    rent_data = pandas.read_csv(r'C:\Users\apanasenco\Downloads\Zip_ZORI_AllHomesPlusMultifamily_SSA.csv', dtype=str)
+    rent_data = pandas.read_csv('./data/Zip_ZORI_AllHomesPlusMultifamily_SSA.csv', dtype=str)
     # Convert latest column to int
     value_column = rent_data.columns[-1]
     rent_data[value_column] = rent_data[value_column].astype(float)
@@ -64,7 +99,8 @@ def zori(folium_map: folium.Map = None,
 
 if __name__ == '__main__':
     m = folium.Map(location=[48, -102], zoom_start=5)
-    midwifery(m)
+    presidential(m)
+    midwifery(m, show=False)
     zori(m, show=False)
     folium.LayerControl().add_to(m)
     m.save('index.html')

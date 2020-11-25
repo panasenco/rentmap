@@ -1,3 +1,6 @@
 [submodule "State-zip-code-GeoJSON"]
 	path = geo/State-zip-code-GeoJSON
 	url = https://github.com/OpenDataDE/State-zip-code-GeoJSON
+[submodule "data/election_2016_data"]
+	path = data/election_2016_data
+	url = https://github.com/Prooffreader/election_2016_data.git
