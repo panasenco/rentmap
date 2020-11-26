@@ -29,22 +29,51 @@ def presidential(folium_map: folium.Map = None,
         / (election_data['democrat'] + election_data['republican'])
         )
     if folium_map:
-        # topojson = folium.TopoJson(
-        #     COUNTIES_GEO,
-        #     'object.us_counties_20m',
-        #     ).add_to(folium_map)
         folium.Choropleth(
-            name='presidential',
+            name='presidential_mainstream',
             geo_data=open(COUNTIES_GEO),
             data=election_data,
             columns=['fips', 'democrat_ratio'],
             key_on='feature.id',
             fill_color='RdBu',
-            legend_name='2016 Presidential Election',
+            legend_name='2016 Presidential Election Democrat vs Republican',
+            topojson='objects.us_counties_20m',
+            **kwargs
+            ).add_to(folium_map)
+    if folium_map:
+        folium.Choropleth(
+            name='presidential_independent',
+            geo_data=open(COUNTIES_GEO),
+            data=election_data,
+            columns=['fips', 'independent_or_other'],
+            key_on='feature.id',
+            fill_color='Oranges',
+            legend_name='2016 Presidential Election Independent',
             topojson='objects.us_counties_20m',
             **kwargs
             ).add_to(folium_map)
     return COUNTIES_GEO, election_data
+
+def vaccines(folium_map: folium.Map = None,
+             **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
+    vaccine_data = pandas.read_csv('./data/vaccines.csv')
+    vaccine_data['enforcement'] = (
+        vaccine_data['med_rel_only'] * 2
+        + vaccine_data['parental_notarization'] * (1-vaccine_data['med_rel_only'])
+        )
+    if folium_map:
+        folium.Choropleth(
+            name='vaccine',
+            geo_data=STATES_GEO,
+            data=vaccine_data,
+            columns=['state', 'enforcement'],
+            key_on='feature.id',
+            bins=[0,0.9,1.4,1.6,2],
+            fill_color='Greens',
+            legend_name='Vaccine Enforcement',
+            **kwargs
+            ).add_to(folium_map)
+    return STATES_GEO, vaccine_data
 
 def midwifery(folium_map: folium.Map = None,
               **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
@@ -99,7 +128,8 @@ def zori(folium_map: folium.Map = None,
 
 if __name__ == '__main__':
     m = folium.Map(location=[48, -102], zoom_start=5)
-    presidential(m)
+    vaccines(m)
+    presidential(m, show=False)
     midwifery(m, show=False)
     zori(m, show=False)
     folium.LayerControl().add_to(m)
