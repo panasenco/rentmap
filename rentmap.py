@@ -112,7 +112,7 @@ def zori(folium_map: folium.Map = None,
     # Drop rent indices over 5,000 (otherwise the legend is all wonky)
     rent_data = rent_data[rent_data[value_column] <= 5000]
     if folium_map:
-        folium.Choropleth(
+        choro = folium.Choropleth(
             name='metropolitan rent',
             geo_data=rent_zips_geo,
             data=rent_data,
@@ -124,14 +124,15 @@ def zori(folium_map: folium.Map = None,
             legend_name='Zillow Observed Rent Index (ZORI)',
             **kwargs
             ).add_to(folium_map)
+        folium.features.GeoJsonPopup(fields=['ZCTA5CE10']).add_to(choro.geojson)
     return rent_zips_geo, rent_data
 
 if __name__ == '__main__':
     m = folium.Map(location=[48, -102], zoom_start=5)
-    vaccines(m)
+    vaccines(m, show=False)
     presidential(m, show=False)
     midwifery(m, show=False)
-    zori(m, show=False)
+    zori(m)
     folium.LayerControl().add_to(m)
     m.save('index.html')
 
