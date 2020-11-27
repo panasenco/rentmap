@@ -54,6 +54,53 @@ def presidential(folium_map: folium.Map = None,
             ).add_to(folium_map)
     return COUNTIES_GEO, election_data
 
+def crime(folium_map: folium.Map = None,
+          **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
+    pop_data = pandas.read_csv('./data/counties.csv',
+                               index_col=['State', 'County'])
+    # https://cdpsdocs.state.co.us/ors/data/CrimeStats/ArrestByCounty-PopByCounty.csv
+    crime_data = pandas.read_csv(
+        './data/co_arrests.csv',
+        usecols=['State', 'County', 'Year Group', 'Which', 'Arrests'],
+        )
+    agg_crimes = crime_data.groupby(
+        by=['State','County','Year Group','Which'],
+        as_index=False,
+        ).sum()
+    agg_crimes = agg_crimes.sort_values('Year Group').drop_duplicates(
+        ['State', 'County', 'Which'],
+        keep='last',
+        )
+    agg_crimes['County'] = agg_crimes['County'].apply(
+        lambda county: f'{county} County',
+        )
+    context_crimes = agg_crimes.join(
+        other=pop_data,
+        on=['State', 'County'],
+        )
+    context_crimes['rate100k'] = (
+        context_crimes['Arrests']
+        / context_crimes['Population']
+        * 100000
+        )
+    context_crimes['FIPS Code'] = context_crimes['FIPS Code'].apply(
+        lambda code: f'0500000US{code}',
+        )
+    violent_crimes = context_crimes[context_crimes['Which'] == 'Violent']
+    if folium_map:
+        folium.Choropleth(
+            name='crime',
+            geo_data=open(COUNTIES_GEO),
+            data=violent_crimes,
+            columns=['FIPS Code', 'rate100k'],
+            key_on='feature.id',
+            fill_color='Reds',
+            legend_name='Violent Crime Rate Per 100k People',
+            topojson='objects.us_counties_20m',
+            **kwargs
+            ).add_to(folium_map)
+    return COUNTIES_GEO, context_crimes
+
 def vaccines(folium_map: folium.Map = None,
              **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
     vaccine_data = pandas.read_csv('./data/vaccines.csv')
@@ -129,10 +176,11 @@ def zori(folium_map: folium.Map = None,
 
 if __name__ == '__main__':
     m = folium.Map(location=[48, -102], zoom_start=5)
+    crime(m)
     vaccines(m, show=False)
     presidential(m, show=False)
     midwifery(m, show=False)
-    zori(m)
+    zori(m, show=False)
     folium.LayerControl().add_to(m)
     m.save('index.html')
 
