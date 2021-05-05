@@ -14,6 +14,23 @@ STATES_GEO = './geo/folium/us-states.json'
 # COUNTIES_GEO = 'https://raw.githubusercontent.com/python-visualization/folium/master/examples/data/us_counties_20m_topo.json'
 COUNTIES_GEO = './geo/folium/us_counties_20m_topo.json'
 
+def homeschooling(folium_map: folium.Map = None,
+                  **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
+    homeschooling_data = pandas.read_csv('./data/homeschooling.csv')
+    if folium_map:
+        folium.Choropleth(
+            name='homeschooling',
+            geo_data=STATES_GEO,
+            data=homeschooling_data,
+            columns=['state', 'regulation_level'],
+            key_on='feature.id',
+            bins=4,
+            fill_color='BuPu',
+            legend_name='Homeschooling Regulation Level',
+            **kwargs
+            ).add_to(folium_map)
+    return STATES_GEO, homeschooling_data
+
 def presidential(folium_map: folium.Map = None,
                  **kwargs: Any) -> Tuple[str, pandas.DataFrame]:
     election_data = pandas.read_csv('./data/election_2016_data/data/presidential_general_election_2016_by_county.csv')
@@ -176,11 +193,12 @@ def zori(folium_map: folium.Map = None,
 
 if __name__ == '__main__':
     m = folium.Map(location=[48, -102], zoom_start=5)
-    crime(m)
+    homeschooling(m, show=False)
+    crime(m, show=False)
     vaccines(m, show=False)
     presidential(m, show=False)
     midwifery(m, show=False)
-    zori(m, show=False)
+    zori(m)
     folium.LayerControl().add_to(m)
     m.save('index.html')
 
