@@ -1,4 +1,4 @@
 *.html
 **/__pycache__
 venv/
-data/ZIP_ZORI_AllHomesPlusMultifamily_SSA.csv
+data/Zip_ZORI_AllHomesPlusMultifamily_SSA.csv
